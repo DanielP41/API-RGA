@@ -1,66 +1,65 @@
-# RAG Document API
+# RAG Document API 🚀
 
-A high-performance RESTful API built with FastAPI and LangChain for querying technical documents. This system implements Retrieval-Augmented Generation (RAG) to provide context-aware answers based on uploaded PDF, TXT, or Markdown files.
+A high-performance RESTful API built with FastAPI and LangChain for querying technical documents. This system implements Retrieval-Augmented Generation (RAG) to provide context-aware answers from your own files.
 
-## Key Features
+## 🌟 Key Features
 
-- Asynchronous document processing and chunking.
-- Vector storage using ChromaDB for efficient similarity search.
-- Integration with OpenAI GPT-3.5-turbo and text embeddings.
-- Automated API documentation via Swagger UI.
-- Fully containerized environment with Docker and Docker Compose.
+- **Multi-Provider Support**: Choose your "brain" (OpenAI, Anthropic Claude, DeepSeek, or Ollama).
+- **Local Embeddings**: Option to use local HuggingFace models for 100% privacy and zero cost.
+- **Modern Interface**: Dark-themed "Glassmorphism" UI with real-time statistics.
+- **Asynchronous Processing**: Efficient document chunking and vector storage (ChromaDB).
+- **Full Dockerization**: Simple deployment with a single command.
 
-## Project Structure
+## 🎨 Modern Frontend
 
-- `app/api/`: API endpoints and routing logic.
-- `app/core/`: Configuration and environment settings.
-- `app/models/`: Pydantic schemas for data validation.
-- `app/services/`: Core logic for document processing, LLM integration, and vector storage.
-- `data/`: Persistent storage for uploaded files and the vector database.
+The project includes a sleek, responsive dashboard where you can:
+- Upload files (PDF, TXT, MD) via drag-and-drop.
+- Chat with your documents using context-aware AI.
+- Monitor system stats like processed documents and active models.
 
-## Installation and Setup
+## 🛠️ Project Structure
 
-### Prerequisites
+- `app/api/`: API routes and logic.
+- `app/services/`: Core logic (LLM, Document Processing, Vector Store).
+- `app/static/`: Frontend (HTML, CSS, JS).
+- `app/core/`: Configuration via environment variables.
 
-- Docker and Docker Compose installed on the host system.
-- An OpenAI API Key.
+## 🚀 Quick Start
 
-### Environment Configuration
+### 1. Prerequisites
+- Docker and Docker Compose.
+- (Optional) API Keys for OpenAI, Anthropic, or DeepSeek.
 
-1. Create a `.env` file in the root directory.
-2. Define the following variable (refer to `.env.example` for additional settings):
-   ```env
-   OPENAI_API_KEY=your_api_key_here
-   ```
+### 2. Configuration (`.env`)
+Create a `.env` file based on `.env.example`:
 
-### Running with Docker
-
-Execute the following command to build and start the repository:
-
-```bash
-docker-compose up --build -d
+```env
+LLM_PROVIDER=openai
+EMBEDDING_PROVIDER=local
+OPENAI_API_KEY=sk-...
 ```
 
-The API will be accessible at `http://localhost:8000`.
+### 3. Deployment
+```bash
+docker-compose up -d --build
+```
+Access the UI at: **http://localhost:8000**
 
-## API Documentation
+## 🔧 Supported Providers
 
-Once the services are running, interactive documentation is available at:
+| Provider | Type | Variable |
+| :--- | :--- | :--- |
+| **OpenAI** | LLM/Embed | `OPENAI_API_KEY` |
+| **Anthropic** | LLM | `ANTHROPIC_API_KEY` |
+| **DeepSeek** | LLM | `DEEPSEEK_API_KEY` |
+| **Ollama** | LLM (Local) | N/A (Server running) |
+| **Local** | Embed | N/A (Downloaded automatically) |
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+Documentation available at: `http://localhost:8000/docs`
 
-### Principal Endpoints
+## 🧪 Technical Stack
 
-- `GET /health`: Returns the health status of the API.
-- `POST /api/v1/documents/upload`: Uploads and processes a new document.
-- `POST /api/v1/query`: Performs a search and generates a response based on the query.
-- `DELETE /api/v1/documents/reset`: Clears the vector database collection.
-
-## Technical Stack
-
-- **Framework**: FastAPI
-- **Orchestration**: LangChain
-- **Vector Database**: ChromaDB
-- **LLM**: OpenAI GPT models
-- **Environment**: Docker
+- **API**: FastAPI
+- **LLM/RAG**: LangChain
+- **Vector DB**: ChromaDB
+- **Models**: OpenAI GPT, Claude 3.5, DeepSeek-V3, HuggingFace
