@@ -3,20 +3,55 @@ from app.main import app
 
 client = TestClient(app)
 
-def test_root():
+def test_root_serves_html():
+    """Test que el root sirve el frontend HTML"""
     response = client.get("/")
     assert response.status_code == 200
-    assert "message" in response.json()
+    assert "text/html" in response.headers["content-type"]
+    assert b"RAG AI" in response.content  # Verifica que contenga el título del app
 
 def test_health_check():
-    response = client.get("/health")
+    """Test del endpoint de health check"""
+    response = client.get("/api/health")  # ← Corregido: /api/health
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
 
+def test_stats_endpoint():
+    """Test del endpoint de estadísticas"""
+    response = client.get("/api/v1/stats")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_documents" in data
+    assert "collection_name" in data
+    assert "model" in data
+
 def test_query_endpoint_without_docs():
-    # This should return 404 since no documents are uploaded yet
+    """Test de query sin documentos subidos - debe retornar 404"""
     response = client.post(
         "/api/v1/query",
         json={"question": "What is Python?", "max_results": 3}
     )
     assert response.status_code == 404
+    assert "No se encontraron documentos relevantes" in response.json()["detail"]
+
+def test_upload_invalid_file_format():
+    """Test de subida de archivo con formato no soportado"""
+    # Crear un archivo fake con extensión no soportada
+    fake_file = ("test.exe", b"fake content", "application/x-msdownload")
+    
+    response = client.post(
+        "/api/v1/documents/upload",
+        files={"file": fake_file}
+    )
+    
+    # Debería fallar con error 500 (ValueError en el backend)
+    assert response.status_code == 500
+
+def test_query_with_invalid_max_results():
+    """Test de query con max_results inválido"""
+    response = client.post(
+        "/api/v1/query",
+        json={"question": "Test question", "max_results": 0}  # 0 es inválido
+    )
+    # Puede ser 404 (no docs) o 422 (validation error) dependiendo de validación
+    assert response.status_code in [404, 422]
