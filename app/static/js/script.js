@@ -36,9 +36,57 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fileInput.files[0]) handleUpload(fileInput.files[0]);
     });
 
+    // ============================================
+    // ✨ NUEVA FUNCIÓN: Validación de archivos
+    // ============================================
+    function validateFile(file) {
+        // Formatos permitidos
+        const validExtensions = ['.pdf', '.txt', '.md'];
+        const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
+
+        // Obtener extensión del archivo
+        const fileName = file.name.toLowerCase();
+        const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+
+        // Validar extensión
+        if (!validExtensions.includes(fileExtension)) {
+            uploadStatus.textContent = `Formato no válido. Solo se aceptan: ${validExtensions.join(', ')}`;
+            uploadStatus.className = "status-msg status-error";
+            return false;
+        }
+
+        // Validar tamaño
+        if (file.size > maxSizeBytes) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            uploadStatus.textContent = `Archivo muy grande (${sizeMB} MB). Máximo permitido: 10 MB`;
+            uploadStatus.className = "status-msg status-error";
+            return false;
+        }
+
+        // Validar que no esté vacío
+        if (file.size === 0) {
+            uploadStatus.textContent = "El archivo está vacío";
+            uploadStatus.className = "status-msg status-error";
+            return false;
+        }
+
+        return true;
+    }
+
     async function handleUpload(file) {
-        uploadStatus.textContent = "Subiendo...";
+        // ============================================
+        // ✨ VALIDAR ANTES DE SUBIR
+        // ============================================
+        if (!validateFile(file)) {
+            return; // Si no es válido, detener aquí
+        }
+
+        uploadStatus.textContent = `Subiendo ${file.name}...`;
         uploadStatus.className = "status-msg";
+
+        // Indicador visual de que está cargando
+        dropZone.style.opacity = '0.5';
+        dropZone.style.pointerEvents = 'none';
 
         const formData = new FormData();
         formData.append('file', file);
@@ -51,16 +99,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             if (response.ok) {
-                uploadStatus.textContent = "¡Subido con éxito!";
+                uploadStatus.textContent = `✓ ${file.name} subido con éxito`;
                 uploadStatus.classList.add('status-success');
                 updateStats();
+
+                // Limpiar mensaje después de 3 segundos
+                setTimeout(() => {
+                    uploadStatus.textContent = "";
+                    uploadStatus.className = "status-msg";
+                }, 3000);
             } else {
                 uploadStatus.textContent = "Error: " + data.detail;
                 uploadStatus.classList.add('status-error');
             }
         } catch (err) {
-            uploadStatus.textContent = "Error de conexión";
+            uploadStatus.textContent = "Error de conexión con el servidor";
             uploadStatus.classList.add('status-error');
+        } finally {
+            // Restaurar estado del drop zone
+            dropZone.style.opacity = '1';
+            dropZone.style.pointerEvents = 'auto';
         }
     }
 
