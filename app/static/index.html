@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Document AI - Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <span class="pulse"></span>
+                <h1>RAG AI <span>Explorer</span></h1>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Documentos</span>
+                    <span id="doc-count" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Modelo</span>
+                    <span id="model-name" class="stat-value">---</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="sidebar">
+                <div class="card upload-card">
+                    <h3>Subir Documento</h3>
+                    <p>Formatos aceptados: PDF, TXT, MD</p>
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <span>📁</span>
+                            <p>Arrastra un archivo o haz clic</p>
+                        </div>
+                        <input type="file" id="file-input" hidden>
+                    </div>
+                    <div id="upload-status" class="status-msg"></div>
+                </div>
+
+                <div class="card settings-card">
+                    <h3>Configuración</h3>
+                    <div class="control-group">
+                        <label>Máximos resultados</label>
+                        <input type="number" id="max-results" value="3" min="1" max="10">
+                    </div>
+                </div>
+            </section>
+
+            <section class="chat-area">
+                <div id="chat-messages" class="chat-container">
+                    <div class="ai-message greeting">
+                        ¡Hola! Soy tu asistente de documentos. Sube un archivo y pregúntame lo que necesites.
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="user-input" placeholder="Pregunta algo sobre tus documentos..." autocomplete="off">
+                    <button id="send-btn">Enviar</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="/js/script.js"></script>
+</body>
+</html>
