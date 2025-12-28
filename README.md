@@ -55,11 +55,28 @@ Access the UI at: **http://localhost:8000**
 | **Ollama** | LLM (Local) | N/A (Server running) |
 | **Local** | Embed | N/A (Downloaded automatically) |
 
-Documentation available at: `http://localhost:8000/docs`
+## 🛣️ Endpoints Principales
 
-## 🧪 Technical Stack
+- `GET /api/health`: Estado de salud de la API.
+- `GET /api/v1/stats`: Estadísticas del sistema (documentos y modelo activo).
+- `POST /api/v1/documents/upload`: Sube y procesa un documento.
+- `POST /api/v1/query`: Consulta RAG sobre los documentos.
+- `DELETE /api/v1/documents/reset`: Reinicia la base de datos vectorial.
+
+## 🧪 Pruebas (Testing)
+
+El proyecto incluye una suite de pruebas para verificar la integridad de la API. Para ejecutarlas localmente:
+
+```bash
+pytest tests/test_api.py
+```
+
+*Nota: Asegúrate de tener las dependencias instaladas (`pip install -r requirements.txt`).*
+
+## 🛠️ Technical Stack
 
 - **API**: FastAPI
 - **LLM/RAG**: LangChain
 - **Vector DB**: ChromaDB
 - **Models**: OpenAI GPT, Claude 3.5, DeepSeek-V3, HuggingFace
+- **Testing**: PyTest

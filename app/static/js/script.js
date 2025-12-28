@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function validateFile(file) {
         // Formatos permitidos
         const validExtensions = ['.pdf', '.txt', '.md'];
-        const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
+        const maxSizeBytes = 35 * 1024 * 1024; // 35 MB
 
         // Obtener extensión del archivo
         const fileName = file.name.toLowerCase();
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validar tamaño
         if (file.size > maxSizeBytes) {
             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            uploadStatus.textContent = `Archivo muy grande (${sizeMB} MB). Máximo permitido: 10 MB`;
+            uploadStatus.textContent = `Archivo muy grande (${sizeMB} MB). Máximo permitido: 35 MB`;
             uploadStatus.className = "status-msg status-error";
             return false;
         }
