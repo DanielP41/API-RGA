@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ✨ NUEVA FUNCIÓN: Validación de archivos
     // ============================================
     function validateFile(file) {
-        // Formatos permitidos
-        const validExtensions = ['.pdf', '.txt', '.md'];
+        // Formatos permitidos - ACTUALIZADO
+        const validExtensions = ['.pdf', '.txt', '.md', '.epub', '.xlsx', '.xls'];
         const maxSizeBytes = 35 * 1024 * 1024; // 35 MB
 
         // Obtener extensión del archivo

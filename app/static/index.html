@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="app-container">
         <header>
@@ -30,7 +32,7 @@
             <section class="sidebar">
                 <div class="card upload-card">
                     <h3>Subir Documento</h3>
-                    <p>Formatos aceptados: PDF, TXT, MD</p>
+                    <p>Formatos aceptados: PDF, TXT, MD, EPUB, XLSX, XLS</p>
                     <div id="drop-zone" class="drop-zone">
                         <div class="drop-zone-content">
                             <span>📁</span>
@@ -57,7 +59,8 @@
                     </div>
                 </div>
                 <div class="chat-input-container">
-                    <input type="text" id="user-input" placeholder="Pregunta algo sobre tus documentos..." autocomplete="off">
+                    <input type="text" id="user-input" placeholder="Pregunta algo sobre tus documentos..."
+                        autocomplete="off">
                     <button id="send-btn">Enviar</button>
                 </div>
             </section>
@@ -65,4 +68,5 @@
     </div>
     <script src="/js/script.js"></script>
 </body>
+
 </html>

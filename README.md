@@ -6,6 +6,7 @@ A high-performance RESTful API built with FastAPI and LangChain for querying tec
 
 - **Multi-Provider Support**: Choose your "brain" (OpenAI, Anthropic Claude, DeepSeek, or Ollama).
 - **Local Embeddings**: Option to use local HuggingFace models for 100% privacy and zero cost.
+- **Multiple File Formats**: PDF, TXT, Markdown, EPUB (eBooks), and Excel (XLSX/XLS).
 - **Modern Interface**: Dark-themed "Glassmorphism" UI with real-time statistics.
 - **Asynchronous Processing**: Efficient document chunking and vector storage (ChromaDB).
 - **Full Dockerization**: Simple deployment with a single command.
@@ -13,7 +14,7 @@ A high-performance RESTful API built with FastAPI and LangChain for querying tec
 ## 🎨 Modern Frontend
 
 The project includes a sleek, responsive dashboard where you can:
-- Upload files (PDF, TXT, MD) via drag-and-drop.
+- Upload files (PDF, TXT, MD, EPUB, XLSX, XLS) via drag-and-drop.
 - Chat with your documents using context-aware AI.
 - Monitor system stats like processed documents and active models.
 

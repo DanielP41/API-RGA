@@ -17,3 +17,7 @@ openai
 langchain-anthropic
 langchain-huggingface
 sentence-transformers
+ebooklib
+openpyxl
+pandas
+beautifulsoup4
