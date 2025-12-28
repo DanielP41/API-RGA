@@ -14,3 +14,6 @@ pytest
 httpx
 tiktoken
 openai
+langchain-anthropic
+langchain-huggingface
+sentence-transformers

@@ -1,4 +1,3 @@
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 import time
 import logging
@@ -6,13 +5,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 class LLMService:
-    def __init__(self, model_name: str, temperature: float, max_tokens: int, openai_api_key: str):
-        self.llm = ChatOpenAI(
-            model=model_name,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            openai_api_key=openai_api_key
-        )
+    def __init__(self, provider: str, model_name: str, temperature: float, max_tokens: int, api_key: str = None):
+        if provider == "openai":
+            from langchain_openai import ChatOpenAI
+            self.llm = ChatOpenAI(model=model_name, temperature=temperature, max_tokens=max_tokens, openai_api_key=api_key)
+        elif provider == "anthropic":
+            from langchain_anthropic import ChatAnthropic
+            self.llm = ChatAnthropic(model_name=model_name, temperature=temperature, max_tokens=max_tokens, anthropic_api_key=api_key)
+        elif provider == "deepseek":
+            from langchain_openai import ChatOpenAI
+            self.llm = ChatOpenAI(
+                model=model_name, 
+                temperature=temperature, 
+                max_tokens=max_tokens, 
+                openai_api_key=api_key,
+                base_url="https://api.deepseek.com/v1"
+            )
+        elif provider == "ollama":
+            from langchain_community.chat_models import ChatOllama
+            self.llm = ChatOllama(model=model_name, temperature=temperature)
+        else:
+            raise ValueError(f"Proveedor de LLM no soportado: {provider}")
+            
         self.prompt_template = self._create_prompt_template()
     
     def _create_prompt_template(self):

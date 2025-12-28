@@ -20,14 +20,25 @@ doc_processor = DocumentProcessor(settings.chunk_size, settings.chunk_overlap)
 vector_store = VectorStoreService(
     settings.chroma_persist_dir,
     settings.collection_name,
-    settings.embedding_model,
-    settings.openai_api_key
+    settings.embedding_provider,
+    openai_api_key=settings.openai_api_key,
+    embedding_model=settings.embedding_model,
+    local_model_name=settings.local_embedding_model
 )
+
+# Determinar API Key para el LLM según el proveedor
+llm_api_key = settings.openai_api_key
+if settings.llm_provider == "anthropic":
+    llm_api_key = settings.anthropic_api_key
+elif settings.llm_provider == "deepseek":
+    llm_api_key = settings.deepseek_api_key
+
 llm_service = LLMService(
+    settings.llm_provider,
     settings.model_name,
     settings.temperature,
     settings.max_tokens,
-    settings.openai_api_key
+    llm_api_key
 )
 
 @router.post("/documents/upload", response_model=DocumentUploadResponse)

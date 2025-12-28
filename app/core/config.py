@@ -8,9 +8,17 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     
-    openai_api_key: str
+    llm_provider: str = "openai" # choices: openai, anthropic, deepseek, ollama
+    embedding_provider: str = "openai" # choices: openai, local
+    
+    openai_api_key: str = ""
+    anthropic_api_key: str = ""
+    deepseek_api_key: str = ""
+    
     model_name: str = "gpt-3.5-turbo"
     embedding_model: str = "text-embedding-3-small"
+    local_embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    
     max_tokens: int = 1000
     temperature: float = 0.7
     

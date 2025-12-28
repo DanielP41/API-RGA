@@ -1,15 +1,26 @@
 from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
 from typing import List
 import logging
 
 logger = logging.getLogger(__name__)
 
 class VectorStoreService:
-    def __init__(self, persist_dir: str, collection_name: str, embedding_model: str, openai_api_key: str):
-        self.embeddings = OpenAIEmbeddings(model=embedding_model, openai_api_key=openai_api_key)
+    def __init__(self, persist_dir: str, collection_name: str, embedding_provider: str, 
+                 openai_api_key: str = None, embedding_model: str = None, local_model_name: str = None):
+        
         self.persist_dir = persist_dir
         self.collection_name = collection_name
+        
+        if embedding_provider == "openai":
+            from langchain_openai import OpenAIEmbeddings
+            self.embeddings = OpenAIEmbeddings(model=embedding_model, openai_api_key=openai_api_key)
+        elif embedding_provider == "local":
+            from langchain_huggingface import HuggingFaceEmbeddings
+            logger.info(f"Usando modelo de embeddings local: {local_model_name}")
+            self.embeddings = HuggingFaceEmbeddings(model_name=local_model_name)
+        else:
+            raise ValueError(f"Proveedor de embeddings no soportado: {embedding_provider}")
+            
         self.vector_store = None
         self._initialize_store()
     
