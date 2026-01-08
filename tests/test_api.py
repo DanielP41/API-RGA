@@ -32,7 +32,7 @@ def test_query_endpoint_without_docs():
         json={"question": "What is Python?", "max_results": 3}
     )
     assert response.status_code == 404
-    assert "No se encontraron documentos relevantes" in response.json()["detail"]
+    assert "No hay documentos" in response.json()["detail"]
 
 def test_upload_invalid_file_format():
     """Test de subida de archivo con formato no soportado"""
@@ -44,8 +44,9 @@ def test_upload_invalid_file_format():
         files={"file": fake_file}
     )
     
-    # Debería fallar con error 500 (ValueError en el backend)
-    assert response.status_code == 500
+    # Debería fallar con error 400 debido a la nueva validación robusta
+    assert response.status_code == 400
+    assert "Formato no soportado" in response.json()["detail"]
 
 def test_query_with_invalid_max_results():
     """Test de query con max_results inválido"""

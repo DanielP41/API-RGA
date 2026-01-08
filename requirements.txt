@@ -21,3 +21,4 @@ ebooklib
 openpyxl
 pandas
 beautifulsoup4
+unstructured

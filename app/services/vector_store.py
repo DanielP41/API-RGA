@@ -35,15 +35,23 @@ class VectorStoreService:
     
     def add_documents(self, chunks):
         """Agrega documentos al vector store"""
-        logger.info(f"Agregando {len(chunks)} chunks al vector store")
-        self.vector_store.add_documents(chunks)
-        return len(chunks)
+        try:
+            logger.info(f"Agregando {len(chunks)} chunks al vector store")
+            self.vector_store.add_documents(chunks)
+            return len(chunks)
+        except Exception as e:
+            logger.error(f"Error crítico al agregar documentos al vector store: {str(e)}", exc_info=True)
+            raise RuntimeError(f"Error interno al guardar en la base de datos de vectores. Detalles: {str(e)}")
     
     def similarity_search(self, query: str, k: int = 3):
         """Busca documentos similares"""
-        logger.info(f"Buscando documentos similares para: {query}")
-        results = self.vector_store.similarity_search_with_score(query, k=k)
-        return results
+        try:
+            logger.info(f"Buscando documentos similares para: {query}")
+            results = self.vector_store.similarity_search_with_score(query, k=k)
+            return results
+        except Exception as e:
+            logger.error(f"Error crítico en búsqueda de similitud: {str(query)} - Error: {str(e)}", exc_info=True)
+            raise RuntimeError(f"Error al buscar documentos relevantes. Por favor, intente de nuevo más tarde.")
     
     def delete_collection(self):
         """Elimina la colección completa"""

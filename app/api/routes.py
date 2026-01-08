@@ -5,10 +5,18 @@ from app.services.document_processor import DocumentProcessor
 from app.services.vector_store import VectorStoreService
 from app.services.llm_service import LLMService
 from app.core.config import get_settings
+from app.utils.validators import (
+    validate_upload_file, 
+    validate_query_text,
+    get_file_info,
+    ALLOWED_EXTENSIONS,
+    MAX_FILE_SIZE_MB
+)
 from datetime import datetime
 import os
 import shutil
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,56 +51,110 @@ llm_service = LLMService(
 
 @router.post("/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(file: UploadFile = File(...)):
-    """Sube y procesa un documento"""
+    """Sube y procesa un documento con validación completa"""
     try:
+        # VALIDACIÓN MEJORADA EN BACKEND
+        safe_filename = validate_upload_file(file)
+        
+        # Log de información del archivo
+        file_info = get_file_info(file)
+        logger.info(f"Procesando archivo: {file_info}")
+        
         # Guardar archivo temporalmente
         upload_dir = "./data/uploads"
         os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, file.filename)
+        file_path = os.path.join(upload_dir, safe_filename)
         
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Guardar con manejo de errores mejorado
+        try:
+            with open(file_path, "wb") as buffer:
+                content = await file.read()
+                buffer.write(content)
+        except Exception as e:
+            logger.error(f"Error al guardar archivo: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error al guardar el archivo")
         
         # Procesar documento
-        doc_id, chunks = doc_processor.process_document(file_path, file.filename)
+        try:
+            doc_id, chunks = doc_processor.process_document(file_path, safe_filename)
+        except ValueError as e:
+            # Error de formato no soportado desde el procesador
+            logger.error(f"Error de formato: {str(e)}")
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(f"Error al procesar documento: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error al procesar el documento")
         
         # Agregar a vector store
-        num_chunks = vector_store.add_documents(chunks)
+        try:
+            num_chunks = vector_store.add_documents(chunks)
+        except Exception as e:
+            logger.error(f"Error al agregar a vector store: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error al almacenar el documento")
+        
+        # Limpiar archivo temporal
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            logger.warning(f"No se pudo eliminar archivo temporal: {str(e)}")
+        
+        logger.info(f"Documento procesado exitosamente: {safe_filename} ({num_chunks} chunks)")
         
         return DocumentUploadResponse(
             document_id=doc_id,
-            filename=file.filename,
+            filename=safe_filename,
             chunks_created=num_chunks,
             status="success",
             uploaded_at=datetime.now()
         )
     
+    except HTTPException:
+        raise
     except FileNotFoundError as e:
         logger.error(f"Archivo no encontrado: {str(e)}")
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
     except Exception as e:
         logger.error(f"Error inesperado al subir documento: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {str(e)}")
 
 @router.post("/query", response_model=QueryResponse)
 async def query_documents(request: QueryRequest):
-    """Consulta los documentos usando RAG"""
+    """Consulta los documentos usando RAG con manejo de errores mejorado"""
     try:
+        # Validar que haya documentos en la colección
+        try:
+            doc_count = vector_store.vector_store._collection.count()
+            if doc_count == 0:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No hay documentos en la base de datos. Por favor, sube al menos un documento primero."
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error al verificar documentos: {str(e)}")
+        
+        # VALIDACIÓN DE CONSULTA
+        try:
+            sanitized_query = validate_query_text(request.question)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+            
         # Buscar documentos relevantes
         retrieved_docs = vector_store.similarity_search(
-            request.question,
+            sanitized_query,
             k=request.max_results
         )
         
         if not retrieved_docs:
             raise HTTPException(
                 status_code=404,
-                detail="No se encontraron documentos relevantes"
+                detail="No se encontraron documentos relevantes para tu consulta"
             )
         
         # Generar respuesta
         answer, latency = llm_service.generate_answer(
-            request.question,
+            sanitized_query,
             retrieved_docs
         )
         
@@ -114,6 +176,8 @@ async def query_documents(request: QueryRequest):
             latency_ms=latency
         )
     
+    except HTTPException:
+        raise
     except OpenAIError as e:
         error_msg = str(e)
         user_friendly_msg = "Lo siento, hubo un error con el servicio de Inteligencia Artificial."
@@ -142,14 +206,23 @@ async def query_documents(request: QueryRequest):
 
 @router.get("/stats")
 async def get_stats():
-    """Retorna estadísticas del sistema"""
+    """Retorna estadísticas del sistema con información adicional"""
     try:
         count = vector_store.vector_store._collection.count()
-        return {
+        
+        # Obtener información adicional
+        stats = {
             "total_documents": count,
+            "total_chunks": count,  # En ChromaDB, cada documento es un chunk
             "collection_name": settings.collection_name,
-            "model": settings.model_name
+            "model": settings.model_name,
+            "llm_provider": settings.llm_provider,
+            "embedding_provider": settings.embedding_provider,
+            "max_file_size_mb": MAX_FILE_SIZE_MB,
+            "allowed_formats": list(ALLOWED_EXTENSIONS)
         }
+        
+        return stats
     except Exception as e:
         logger.error(f"Error al obtener estadísticas: {str(e)}")
         raise HTTPException(status_code=500, detail="Error al acceder a la base de datos de vectores")
@@ -159,7 +232,43 @@ async def reset_database():
     """Elimina todos los documentos (útil para desarrollo)"""
     try:
         vector_store.delete_collection()
-        return {"message": "Base de datos reiniciada correctamente"}
+        logger.info("Base de datos reiniciada correctamente")
+        return {
+            "message": "Base de datos reiniciada correctamente",
+            "status": "success"
+        }
     except Exception as e:
         logger.error(f"Error al reiniciar la base de datos: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/documents/list")
+async def list_documents():
+    """Lista todos los documentos únicos en la base de datos"""
+    try:
+        # Obtener todos los metadatos
+        collection = vector_store.vector_store._collection
+        results = collection.get()
+        
+        # Extraer documentos únicos por filename
+        unique_docs = {}
+        if results and 'metadatas' in results:
+            for metadata in results['metadatas']:
+                filename = metadata.get('filename', 'Unknown')
+                doc_id = metadata.get('document_id', 'Unknown')
+                
+                if filename not in unique_docs:
+                    unique_docs[filename] = {
+                        'filename': filename,
+                        'document_id': doc_id,
+                        'chunk_count': 1
+                    }
+                else:
+                    unique_docs[filename]['chunk_count'] += 1
+        
+        return {
+            "documents": list(unique_docs.values()),
+            "total_unique_documents": len(unique_docs)
+        }
+    except Exception as e:
+        logger.error(f"Error al listar documentos: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error al listar documentos")

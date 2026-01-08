@@ -19,17 +19,28 @@ class DocumentProcessor:
     
     def _extract_epub_text(self, file_path: str) -> str:
         """Extrae texto de un archivo EPUB"""
-        book = epub.read_epub(file_path)
-        chapters = []
-        
-        for item in book.get_items():
-            if item.get_type() == ebooklib.ITEM_DOCUMENT:
-                # Parsear HTML del capítulo
-                soup = BeautifulSoup(item.get_content(), 'html.parser')
-                text = soup.get_text()
-                chapters.append(text)
-        
-        return '\n\n'.join(chapters)
+        try:
+            book = epub.read_epub(file_path)
+            chapters = []
+            
+            for item in book.get_items():
+                if item.get_type() == ebooklib.ITEM_DOCUMENT:
+                    try:
+                        # Parsear HTML del capítulo
+                        soup = BeautifulSoup(item.get_content(), 'html.parser')
+                        text = soup.get_text()
+                        if text.strip():
+                            chapters.append(text.strip())
+                    except Exception as e:
+                        logger.warning(f"Error al extraer texto de capítulo en EPUB: {str(e)}")
+            
+            if not chapters:
+                raise ValueError("No se pudo extraer texto legible del EPUB")
+                
+            return '\n\n'.join(chapters)
+        except Exception as e:
+            logger.error(f"Error al procesar EPUB {file_path}: {str(e)}", exc_info=True)
+            raise ValueError(f"Error al procesar el archivo EPUB. El archivo podría estar corrupto o no ser válido. Detalles: {str(e)}")
     
     def load_document(self, file_path: str, filename: str):
         """Carga un documento según su extensión"""
@@ -37,29 +48,33 @@ class DocumentProcessor:
         
         logger.info(f"Cargando documento: {filename}")
         
-        if ext == '.pdf':
-            loader = PyPDFLoader(file_path)
-            return loader.load()
-            
-        elif ext in ['.txt', '.md']:
-            loader = TextLoader(file_path)
-            return loader.load()
-            
-        elif ext == '.epub':
-            # Procesar EPUB manualmente
-            text = self._extract_epub_text(file_path)
-            # Crear un documento de LangChain manualmente
-            from langchain.docstore.document import Document
-            return [Document(page_content=text, metadata={"source": file_path})]
-            
-        elif ext in ['.xlsx', '.xls']:
-            # Para Excel, usar UnstructuredExcelLoader
-            loader = UnstructuredExcelLoader(file_path, mode="elements")
-            return loader.load()
-            
-        else:
-            logger.error(f"Formato no soportado: {ext}")
-            raise ValueError(f"Formato no soportado: {ext}. Formatos válidos: PDF, TXT, MD, EPUB, XLSX, XLS")
+        try:
+            if ext == '.pdf':
+                loader = PyPDFLoader(file_path)
+                return loader.load()
+                
+            elif ext in ['.txt', '.md']:
+                loader = TextLoader(file_path, encoding='utf-8')
+                return loader.load()
+                
+            elif ext == '.epub':
+                # Procesar EPUB
+                text = self._extract_epub_text(file_path)
+                from langchain.docstore.document import Document
+                return [Document(page_content=text, metadata={"source": filename})]
+                
+            elif ext in ['.xlsx', '.xls']:
+                loader = UnstructuredExcelLoader(file_path, mode="elements")
+                return loader.load()
+                
+            else:
+                logger.error(f"Formato no soportado: {ext}")
+                raise ValueError(f"Formato no soportado: {ext}. Formatos válidos: PDF, TXT, MD, EPUB, XLSX, XLS")
+        except Exception as e:
+            logger.error(f"Error fatal al cargar {filename}: {str(e)}", exc_info=True)
+            if isinstance(e, ValueError):
+                raise
+            raise ValueError(f"No se pudo leer el archivo '{filename}'. Asegúrese de que el formato sea correcto y el archivo no esté protegido. Error: {str(e)}")
     
     def process_document(self, file_path: str, filename: str):
         """Procesa un documento y lo divide en chunks"""
@@ -78,6 +93,12 @@ class DocumentProcessor:
         
         # Dividir en chunks
         chunks = self.text_splitter.split_documents(documents)
+        
+        # Validar que se generaron chunks
+        if not chunks:
+            logger.error(f"No se generó contenido para el documento: {filename}")
+            raise ValueError(f"El documento '{filename}' no produjo ningún texto procesable.")
+            
         logger.info(f"Documento procesado: {len(chunks)} chunks creados con ID {doc_id}")
         
         return doc_id, chunks

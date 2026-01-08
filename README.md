@@ -1,8 +1,8 @@
-# RAG Document API 🚀
+# RAG Document API
 
 A high-performance RESTful API built with FastAPI and LangChain for querying technical documents. This system implements Retrieval-Augmented Generation (RAG) to provide context-aware answers from your own files.
 
-## 🌟 Key Features
+## Key Features
 
 - **Multi-Provider Support**: Choose your "brain" (OpenAI, Anthropic Claude, DeepSeek, or Ollama).
 - **Local Embeddings**: Option to use local HuggingFace models for 100% privacy and zero cost.
@@ -11,21 +11,21 @@ A high-performance RESTful API built with FastAPI and LangChain for querying tec
 - **Asynchronous Processing**: Efficient document chunking and vector storage (ChromaDB).
 - **Full Dockerization**: Simple deployment with a single command.
 
-## 🎨 Modern Frontend
+## Modern Frontend
 
 The project includes a sleek, responsive dashboard where you can:
-- Upload files (PDF, TXT, MD, EPUB, XLSX, XLS) via drag-and-drop.
+- Upload files (PDF, TXT, MD, EPUB, XLSX, XLS) up to 35MB via drag-and-drop.
 - Chat with your documents using context-aware AI.
 - Monitor system stats like processed documents and active models.
 
-## 🛠️ Project Structure
+## Project Structure
 
 - `app/api/`: API routes and logic.
 - `app/services/`: Core logic (LLM, Document Processing, Vector Store).
 - `app/static/`: Frontend (HTML, CSS, JS).
 - `app/core/`: Configuration via environment variables.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 - Docker and Docker Compose.
@@ -46,7 +46,7 @@ docker-compose up -d --build
 ```
 Access the UI at: **http://localhost:8000**
 
-## 🔧 Supported Providers
+## Supported Providers
 
 | Provider | Type | Variable |
 | :--- | :--- | :--- |
@@ -56,7 +56,7 @@ Access the UI at: **http://localhost:8000**
 | **Ollama** | LLM (Local) | N/A (Server running) |
 | **Local** | Embed | N/A (Downloaded automatically) |
 
-## 🛣️ Endpoints Principales
+## Endpoints Principales
 
 - `GET /api/health`: Estado de salud de la API.
 - `GET /api/v1/stats`: Estadísticas del sistema (documentos y modelo activo).
@@ -64,17 +64,21 @@ Access the UI at: **http://localhost:8000**
 - `POST /api/v1/query`: Consulta RAG sobre los documentos.
 - `DELETE /api/v1/documents/reset`: Reinicia la base de datos vectorial.
 
-## 🧪 Pruebas (Testing)
+## Pruebas (Testing)
 
 El proyecto incluye una suite de pruebas para verificar la integridad de la API. Para ejecutarlas localmente:
 
 ```bash
+# Run API tests
 pytest tests/test_api.py
+
+# Run validation logic tests
+pytest tests/test_validators.py
 ```
 
 *Nota: Asegúrate de tener las dependencias instaladas (`pip install -r requirements.txt`).*
 
-## 🛠️ Technical Stack
+## Technical Stack
 
 - **API**: FastAPI
 - **LLM/RAG**: LangChain

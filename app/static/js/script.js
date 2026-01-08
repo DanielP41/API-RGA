@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ============================================
-    // ✨ NUEVA FUNCIÓN: Validación de archivos
+    // NUEVA FUNCIÓN: Validación de archivos
     // ============================================
     function validateFile(file) {
         // Formatos permitidos - ACTUALIZADO
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleUpload(file) {
         // ============================================
-        // ✨ VALIDAR ANTES DE SUBIR
+        // VALIDAR ANTES DE SUBIR
         // ============================================
         if (!validateFile(file)) {
             return; // Si no es válido, detener aquí
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             if (response.ok) {
-                uploadStatus.textContent = `✓ ${file.name} subido con éxito`;
+                uploadStatus.textContent = `${file.name} subido con éxito`;
                 uploadStatus.classList.add('status-success');
                 updateStats();
 
