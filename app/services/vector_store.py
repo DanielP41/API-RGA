@@ -22,6 +22,16 @@ class VectorStoreService:
         else:
             raise ValueError(f"Proveedor de embeddings no soportado: {embedding_provider}")
             
+        # Inicializar caché de embeddings
+        try:
+            from app.services.embedding_cache import EmbeddingCache, CachedEmbeddings
+            logger.info("Activando caché de embeddings")
+            self.embeddings = CachedEmbeddings(self.embeddings, EmbeddingCache())
+        except ImportError:
+            logger.warning("No se pudo importar EmbeddingCache, continuando sin caché")
+        except Exception as e:
+            logger.error(f"Error al inicializar caché de embeddings: {e}, continuando sin caché")
+            
         self.vector_store = None
         self._initialize_store()
     

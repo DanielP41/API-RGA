@@ -35,7 +35,20 @@ class QueryRequest(BaseModel):
         """Validate that question is not just whitespace"""
         if not v.strip():
             raise ValueError("La pregunta no puede estar vacía o contener solo espacios")
+        if not v.strip():
+            raise ValueError("La pregunta no puede estar vacía o contener solo espacios")
         return v.strip()
+
+class ConversationMessage(BaseModel):
+    role: str
+    content: str
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+class ConversationQueryRequest(BaseModel):
+    question: str = Field(..., min_length=3, description="La pregunta del usuario")
+    conversation_id: Optional[str] = None
+    history: List[ConversationMessage] = []
+    max_results: int = Field(3, ge=1, le=10)
 
 class SourceDocument(BaseModel):
     """Model for a source document fragment"""

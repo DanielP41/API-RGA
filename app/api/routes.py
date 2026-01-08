@@ -1,9 +1,11 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from typing import Optional, List
 from openai import OpenAIError
-from app.models.schemas import DocumentUploadResponse, QueryRequest, QueryResponse, SourceDocument
+from app.models.schemas import DocumentUploadResponse, QueryRequest, QueryResponse, SourceDocument, ConversationQueryRequest, ConversationMessage
 from app.services.document_processor import DocumentProcessor
 from app.services.vector_store import VectorStoreService
+from app.services.llm_service import LLMService
+from app.services.conversation_manager import ConversationManager
 from app.services.llm_service import LLMService
 from app.core.config import get_settings
 from app.utils.validators import (
@@ -32,8 +34,10 @@ vector_store = VectorStoreService(
     settings.embedding_provider,
     openai_api_key=settings.openai_api_key,
     embedding_model=settings.embedding_model,
+    embedding_model=settings.embedding_model,
     local_model_name=settings.local_embedding_model
 )
+conversation_manager = ConversationManager()
 
 # Determinar API Key para el LLM según el proveedor
 llm_api_key = settings.openai_api_key
@@ -218,6 +222,68 @@ async def query_documents(request: QueryRequest):
     except Exception as e:
         logger.error(f"Error inesperado al consultar documentos: {type(e).__name__} - {str(e)}")
         raise HTTPException(status_code=500, detail="Ocurrió un error inesperado en el servidor.")
+
+@router.post("/chat", response_model=QueryResponse)
+async def chat_documents(request: ConversationQueryRequest):
+    """Consulta conversacional con historial"""
+    try:
+        # 1. Validar documentos
+        try:
+            doc_count = vector_store.vector_store._collection.count()
+            if doc_count == 0:
+                raise HTTPException(status_code=404, detail="No hay documentos en la base de datos.")
+        except Exception as e:
+            logger.error(f"Error checking docs: {e}")
+            
+        # 2. Preparar Prompt con Contexto Histórico
+        # Usamos el historial PROVISTO por el cliente
+        context_prompt = conversation_manager.get_context_prompt(
+            request.history, 
+            request.question
+        )
+        
+        # 3. Buscar documentos usando SOLAMENTE la pregunta actual para mejor retrieval
+        # (El embedding del historial completo suele añadir ruido)
+        retrieved_docs = vector_store.similarity_search(
+            request.question,  
+            k=request.max_results
+        )
+        
+        if not retrieved_docs:
+             # Fallback: si no hay docs, intentar responder con contexto general o avisar
+             # Por ahora, comportamiento estándar RAG:
+             pass 
+             
+        # 4. Generar respuesta pasando el contexto enriquecido (Historial + Pregunta)
+        # LLMService insertará este texto en el placeholder {question} de su template
+        answer, latency = llm_service.generate_answer(
+            context_prompt,
+            retrieved_docs
+        )
+        
+        # 5. Preparar fuentes
+        sources = [
+            SourceDocument(
+                content=doc.page_content[:200] + "...",
+                metadata=doc.metadata,
+                relevance_score=float(score)
+            )
+            for doc, score in retrieved_docs
+        ]
+        
+        return QueryResponse(
+            answer=answer,
+            sources=sources,
+            model_used=settings.model_name,
+            tokens_used=None,
+            latency_ms=latency
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/stats")
 async def get_stats():
