@@ -7,6 +7,7 @@
     <title>RAG Document AI - Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
@@ -29,43 +30,169 @@
         </header>
 
         <main>
-            <section class="sidebar">
-                <div class="card upload-card">
-                    <h3>Subir Documento</h3>
-                    <p>Formatos aceptados: PDF, TXT, MD, EPUB, XLSX, XLS</p>
-                    <div id="drop-zone" class="drop-zone">
-                        <div class="drop-zone-content">
-                            <span></span>
-                            <p>Arrastra un archivo o haz clic</p>
+            <!-- Navigation Tabs -->
+            <div class="tabs-nav">
+                <button class="tab-btn active" data-tab="upload-tab">
+                    <i class="fas fa-cloud-upload-alt"></i> Subir & Chat
+                </button>
+                <button class="tab-btn" data-tab="documents-tab">
+                    <i class="fas fa-folder-open"></i> Gestionar Documentos
+                </button>
+            </div>
+
+            <!-- TAB 1: Upload & Chat -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="content-grid">
+                    <section class="sidebar">
+                        <div class="card upload-card">
+                            <h3>Subir Documento</h3>
+                            <p class="subtitle">Formatos: PDF, TXT, MD, EPUB, XLSX</p>
+
+                            <div id="drop-zone" class="drop-zone">
+                                <div class="drop-zone-content">
+                                    <i class="fas fa-file-import fa-2x"></i>
+                                    <p>Arrastra un archivo o haz clic</p>
+                                </div>
+                                <input type="file" id="file-input" hidden>
+                            </div>
+
+                            <!-- New Metadata Inputs -->
+                            <div class="upload-metadata">
+                                <div class="input-group">
+                                    <input type="text" id="upload-tags" placeholder="Tags (ej: reporte, 2024)">
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="upload-desc" placeholder="Descripción breve (opcional)">
+                                </div>
+                            </div>
+
+                            <div id="upload-status" class="status-msg"></div>
                         </div>
-                        <input type="file" id="file-input" hidden>
-                    </div>
-                    <div id="upload-status" class="status-msg"></div>
-                </div>
 
-                <div class="card settings-card">
-                    <h3>Configuración</h3>
-                    <div class="control-group">
-                        <label>Máximos resultados</label>
-                        <input type="number" id="max-results" value="3" min="1" max="10">
-                    </div>
-                </div>
-            </section>
+                        <div class="card settings-card">
+                            <h3>Configuración</h3>
+                            <div class="control-group">
+                                <label>Resultados (Contexto)</label>
+                                <div class="range-wrap">
+                                    <input type="range" id="max-results" min="1" max="10" value="3">
+                                    <span id="max-results-val">3</span>
+                                </div>
+                            </div>
+                        </div>
 
-            <section class="chat-area">
-                <div id="chat-messages" class="chat-container">
-                    <div class="ai-message greeting">
-                        ¡Hola! Soy tu asistente de documentos. Sube un archivo y pregúntame lo que necesites.
+                        <div class="card tips-card">
+                            <h3><i class="fas fa-lightbulb"></i> Tips</h3>
+                            <ul>
+                                <li>Usa tags para organizar tus archivos</li>
+                                <li>Archivos hasta 35MB</li>
+                                <li>Pregunta sobre contenido específico</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="chat-area">
+                        <div id="chat-messages" class="chat-container">
+                            <div class="ai-message greeting">
+                                <div class="message-icon"><i class="fas fa-robot"></i></div>
+                                <div class="message-content">
+                                    ¡Hola! Soy tu asistente de documentos. Sube archivos y pregúntame lo que necesites
+                                    para analizar su contenido.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" id="user-input" placeholder="Escribe tu pregunta sobre los documentos..."
+                                autocomplete="off">
+                            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- TAB 2: Document Management -->
+            <div id="documents-tab" class="tab-content">
+                <div class="documents-manager">
+                    <div class="toolbar">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="doc-search" placeholder="Buscar por nombre o tag...">
+                        </div>
+                        <div class="toolbar-actions">
+                            <button id="refresh-docs" class="icon-btn" title="Actualizar lista"><i
+                                    class="fas fa-sync-alt"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="documents-list-container" class="documents-grid">
+                        <!-- Documents will be injected here -->
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando documentos...
+                        </div>
                     </div>
                 </div>
-                <div class="chat-input-container">
-                    <input type="text" id="user-input" placeholder="Pregunta algo sobre tus documentos..."
-                        autocomplete="off">
-                    <button id="send-btn">Enviar</button>
-                </div>
-            </section>
+            </div>
         </main>
     </div>
+
+    <!-- Document Detail Modal -->
+    <div id="doc-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="modal-header">
+                <h2 id="modal-filename">Documento.pdf</h2>
+                <span id="modal-type" class="badge">PDF</span>
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-section">
+                    <h3>Detalles</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>ID:</label> <span id="modal-id">---</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Subido:</label> <span id="modal-date">---</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Tamaño:</label> <span id="modal-size">---</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Chunks:</label> <span id="modal-chunks">---</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <h3>Metadata</h3>
+                    <div class="input-group">
+                        <label>Tags</label>
+                        <input type="text" id="modal-tags" placeholder="Sin tags">
+                    </div>
+                    <div class="input-group">
+                        <label>Descripción</label>
+                        <textarea id="modal-desc" rows="2" placeholder="Sin descripción"></textarea>
+                    </div>
+                    <button id="save-meta-btn" class="btn btn-primary btn-sm">Guardar Cambios</button>
+                </div>
+
+                <div class="modal-section">
+                    <h3>Acciones IA</h3>
+                    <button id="gen-summary-btn" class="btn btn-secondary">
+                        <i class="fas fa-magic"></i> Generar Resumen
+                    </button>
+                    <div id="summary-result" class="summary-box" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="delete-doc-btn" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar Documento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/js/script.js"></script>
 </body>
 

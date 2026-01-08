@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from app.core.config import get_settings
-from app.api import routes
+from app.api import routes, routes_documents
 from app.utils.logging import setup_logging
 import logging
 
@@ -30,6 +30,7 @@ app.add_middleware(
 
 # Rutas de la API e incluyes
 app.include_router(routes.router, prefix="/api/v1")
+app.include_router(routes_documents.router, prefix="/api/v1")
 
 @app.get("/api/health")
 async def health_check():

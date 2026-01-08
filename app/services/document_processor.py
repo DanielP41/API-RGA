@@ -6,6 +6,8 @@ import logging
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
+from typing import List, Optional
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -76,23 +78,41 @@ class DocumentProcessor:
                 raise
             raise ValueError(f"No se pudo leer el archivo '{filename}'. Asegúrese de que el formato sea correcto y el archivo no esté protegido. Error: {str(e)}")
     
-    def process_document(self, file_path: str, filename: str):
-        """Procesa un documento y lo divide en chunks"""
+    def process_document(self, file_path: str, filename: str, tags: List[str] = None, description: str = None):
+        """Procesa un documento y lo divide en chunks con metadata enriquecida"""
         logger.info(f"Iniciando procesamiento de {filename}")
         
         # Cargar documento
         documents = self.load_document(file_path, filename)
         
+        # Obtener tamaño del archivo
+        file_size = os.path.getsize(file_path)
+        file_type = os.path.splitext(filename)[1].lower()
+        
         # Generar ID único para el documento
         doc_id = str(uuid.uuid4())
-        
-        # Agregar metadata
-        for doc in documents:
-            doc.metadata['document_id'] = doc_id
-            doc.metadata['filename'] = filename
+        uploaded_at = datetime.now().isoformat()
         
         # Dividir en chunks
         chunks = self.text_splitter.split_documents(documents)
+        total_chunks = len(chunks)
+        
+        # Agregar metadata a cada chunk
+        for i, chunk in enumerate(chunks):
+            chunk.metadata['document_id'] = doc_id
+            chunk.metadata['filename'] = filename
+            chunk.metadata['chunk_index'] = i
+            chunk.metadata['total_chunks'] = total_chunks
+            chunk.metadata['uploaded_at'] = uploaded_at
+            chunk.metadata['file_size'] = file_size
+            chunk.metadata['file_type'] = file_type
+            
+            if tags:
+                # ChromaDB prefiere tipos simples en metadata
+                chunk.metadata['tags'] = ",".join(tags)
+            
+            if description:
+                chunk.metadata['description'] = description
         
         # Validar que se generaron chunks
         if not chunks:

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
+from typing import Optional, List
 from openai import OpenAIError
 from app.models.schemas import DocumentUploadResponse, QueryRequest, QueryResponse, SourceDocument
 from app.services.document_processor import DocumentProcessor
@@ -50,7 +51,11 @@ llm_service = LLMService(
 )
 
 @router.post("/documents/upload", response_model=DocumentUploadResponse)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    tags: Optional[str] = Form(None),
+    description: Optional[str] = Form(None)
+):
     """Sube y procesa un documento con validación completa"""
     try:
         # VALIDACIÓN MEJORADA EN BACKEND
@@ -76,7 +81,17 @@ async def upload_document(file: UploadFile = File(...)):
         
         # Procesar documento
         try:
-            doc_id, chunks = doc_processor.process_document(file_path, safe_filename)
+            # Parsear tags
+            tags_list = []
+            if tags:
+                tags_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
+
+            doc_id, chunks = doc_processor.process_document(
+                file_path, 
+                safe_filename,
+                tags=tags_list,
+                description=description
+            )
         except ValueError as e:
             # Error de formato no soportado desde el procesador
             logger.error(f"Error de formato: {str(e)}")

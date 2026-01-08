@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
+
+# --- Upload & Basic ---
 
 class DocumentUploadResponse(BaseModel):
     """Response model for document upload endpoint"""
@@ -9,6 +11,8 @@ class DocumentUploadResponse(BaseModel):
     chunks_created: int = Field(..., ge=0, description="Number of text chunks created from the document")
     status: str = Field(..., description="Upload status (success/error)")
     uploaded_at: datetime = Field(..., description="Timestamp of when the document was uploaded")
+
+# --- Querying ---
 
 class QueryRequest(BaseModel):
     """Request model for querying documents"""
@@ -46,3 +50,52 @@ class QueryResponse(BaseModel):
     model_used: str = Field(..., description="LLM model used to generate the answer")
     tokens_used: Optional[int] = Field(None, ge=0, description="Number of tokens used (if available)")
     latency_ms: float = Field(..., ge=0, description="Response generation latency in milliseconds")
+
+# --- Document Management ---
+
+class DocumentInfo(BaseModel):
+    """Detailed information about a document"""
+    document_id: str
+    filename: str
+    uploaded_at: Optional[datetime] = None
+    file_size_bytes: Optional[int] = None
+    chunk_count: int
+    tags: List[str] = []
+    description: Optional[str] = None
+    file_type: Optional[str] = None
+
+class DocumentListResponse(BaseModel):
+    """Response for listing documents"""
+    documents: List[DocumentInfo]
+    total_count: int
+
+class DocumentDeleteResponse(BaseModel):
+    """Response for document deletion"""
+    document_id: str
+    status: str
+    message: str
+
+class DocumentUpdateRequest(BaseModel):
+    """Request to update document metadata"""
+    tags: Optional[List[str]] = None
+    description: Optional[str] = None
+
+class DocumentUpdateResponse(BaseModel):
+    """Response after updating document"""
+    document_id: str
+    status: str
+    updated_fields: Dict[str, Any]
+
+class DocumentSearchRequest(BaseModel):
+    """Advanced search request"""
+    query: Optional[str] = None
+    tags: Optional[List[str]] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+    file_type: Optional[str] = None
+
+class DocumentSummaryResponse(BaseModel):
+    """AI Generated summary of a document"""
+    document_id: str
+    summary: str
+    model_used: str
