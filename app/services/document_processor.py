@@ -8,6 +8,7 @@ from ebooklib import epub
 from bs4 import BeautifulSoup
 from typing import List, Optional
 from datetime import datetime
+from app.services.background_tasks import ProcessingStatus
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ class DocumentProcessor:
             chunk_overlap=chunk_overlap,
             length_function=len,
         )
+        self.processing_status = {}
     
     def _extract_epub_text(self, file_path: str) -> str:
         """Extrae texto de un archivo EPUB"""
@@ -122,3 +124,42 @@ class DocumentProcessor:
         logger.info(f"Documento procesado: {len(chunks)} chunks creados con ID {doc_id}")
         
         return doc_id, chunks
+
+    async def process_in_background(
+        self, 
+        job_id: str, 
+        file_path: str, 
+        filename: str,
+        vector_store
+    ):
+        """Procesa un documento en segundo plano y actualiza el estado"""
+        self.processing_status[job_id] = ProcessingStatus.PROCESSING
+        logger.info(f"Iniciando procesamiento en segundo plano para job {job_id}")
+        
+        try:
+            # Procesamiento (CPU bound, ejecutamos idealmente en threadpool 
+            # pero por simplicidad llamamos directo, asumiendo que no bloquea excesivamente
+            # o que el usuario acepta el overhead en este paso)
+            doc_id, chunks = self.process_document(file_path, filename)
+            
+            # Agregar al vector store
+            vector_store.add_documents(chunks)
+            
+            # Limpieza
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                logger.warning(f"No se pudo eliminar archivo temporal {file_path}: {e}")
+                
+            self.processing_status[job_id] = ProcessingStatus.COMPLETED
+            logger.info(f"Job {job_id} completado exitosamente. Doc ID: {doc_id}")
+            
+        except Exception as e:
+            self.processing_status[job_id] = ProcessingStatus.FAILED
+            logger.error(f"Error processing job {job_id}: {e}", exc_info=True)
+            # Intentar limpiar en caso de error también
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except:
+                    pass

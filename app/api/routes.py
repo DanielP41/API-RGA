@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, BackgroundTasks
 from typing import Optional, List
 from openai import OpenAIError
 from app.models.schemas import DocumentUploadResponse, QueryRequest, QueryResponse, SourceDocument, ConversationQueryRequest, ConversationMessage
@@ -19,6 +19,7 @@ from datetime import datetime
 import os
 import shutil
 import logging
+import uuid
 
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,54 @@ async def upload_document(
     except Exception as e:
         logger.error(f"Error inesperado al subir documento: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error inesperado: {str(e)}")
+
+@router.post("/documents/upload/async")
+async def upload_async(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    """Sube un documento para procesamiento asíncrono"""
+    try:
+        # Validación básica inicial
+        safe_filename = validate_upload_file(file)
+        
+        # Guardar archivo temporalmente
+        upload_dir = "./data/uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        # Usar UUID en nombre de archivo para evitar colisiones en async masivo
+        job_id = str(uuid.uuid4())
+        file_path = os.path.join(upload_dir, f"{job_id}_{safe_filename}")
+        
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+            
+        # Registrar y lanzar tarea
+        # IMPORTANTE: Pasamos vector_store porque doc_processor no lo tiene
+        background_tasks.add_task(
+            doc_processor.process_in_background,
+            job_id, 
+            file_path, 
+            safe_filename,
+            vector_store
+        )
+        
+        return {"job_id": job_id, "status": "pending", "message": "Documento recibido para procesamiento en segundo plano"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en upload async: {e}")
+        raise HTTPException(status_code=500, detail="Error al iniciar la carga asíncrona")
+
+@router.get("/documents/upload/status/{job_id}")
+async def upload_status(job_id: str):
+    """Consulta el estado de un trabajo de procesamiento"""
+    status = doc_processor.processing_status.get(job_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Job ID no encontrado")
+    
+    return {"job_id": job_id, "status": status}
 
 @router.post("/query", response_model=QueryResponse)
 async def query_documents(request: QueryRequest):
